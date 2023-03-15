@@ -2,7 +2,6 @@
 #include <Wire.h>
 
 SigmaDS3231::SigmaDS3231(byte addr) : address(addr) {
-    //this->address = addr;
     Wire.begin();
 }
 
@@ -21,7 +20,6 @@ tm SigmaDS3231::GetTime() {
         tm0.tm_mday = unpackRegister(Wire.read());
         byte m = Wire.read();
         tm0.tm_year = unpackRegister(Wire.read()) /*+ basicYear*/;
-        Serial.print("m=");Serial.println(m);
         if (m & 0x80) { // this is a century bit
             tm0.tm_year += 100;
             m &= 0x1F;
