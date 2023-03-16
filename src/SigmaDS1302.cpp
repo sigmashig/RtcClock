@@ -66,7 +66,8 @@ byte SigmaDS1302::hourFromRegisterValue(const byte value) {
 }
 SigmaDS1302::~SigmaDS1302() {}
 
-SigmaDS1302::SigmaDS1302(DS1302_Pins& pins): cePin(pins.cePin), ioPin(pins.datPin), sclkPin(pins.clkPin), SigmaRTC(RTC_DS1302) {
+SigmaDS1302::SigmaDS1302(DS1302_Pins& pins): SigmaRTC(RTC_DS1302),
+cePin(pins.cePin), ioPin(pins.datPin), sclkPin(pins.clkPin) {
 
     digitalWrite(cePin, LOW);
     pinMode(cePin, OUTPUT);
@@ -152,7 +153,7 @@ tm SigmaDS1302::GetTime() {
     t.tm_min = bcdToDec(readIn());
     t.tm_hour = hourFromRegisterValue(readIn());
     t.tm_mday = bcdToDec(readIn());
-    t.tm_mon = bcdToDec(readIn()) -1;
+    t.tm_mon = bcdToDec(readIn()) - 1;
     t.tm_wday = bcdToDec(readIn());
     t.tm_year = bcdToDec(readIn());
     t.tm_isdst = -1;  // DST information not available.
@@ -171,7 +172,7 @@ void SigmaDS1302::SetTime(tm& t) {
     writeOut(decToBcd(t.tm_min));
     writeOut(decToBcd(t.tm_hour));
     writeOut(decToBcd(t.tm_mday));
-    writeOut(decToBcd(t.tm_mon + 1 ));
+    writeOut(decToBcd(t.tm_mon + 1));
     writeOut(decToBcd(t.tm_wday));
     writeOut(decToBcd(t.tm_year));
     // All clock registers *and* the WP register have to be written for the time

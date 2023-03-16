@@ -1,6 +1,6 @@
 {
     "name": "SigmaClock",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "The library, supports a RTC modules DS1302 and DS3231 simultatneously. Using a standard time.h structure.",
     "keywords": "DS1302, DS3231",
     "repository": {
@@ -15,7 +15,9 @@
         }
     ],
     "license": "MIT",
-    "dependencies": {},
+    "dependencies": {	"arduino-libraries/Ethernet" : "~2.0.1",
+	                    "bblanchon/ArduinoJson":"~6.20.1"
+    },
     "homepage": "https://github.com/sigmashig/RtcClock",
     "frameworks": "*",
     "platforms": "*"
