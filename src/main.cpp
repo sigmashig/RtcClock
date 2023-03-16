@@ -15,21 +15,23 @@ void setup() {
 
   Serial.print("Type:"); Serial.println(RTCClock::DetectRtcType());
 
-  t0 = RTCClock::GetTime();
+  t0 = RTCClock::GetClock();
   Serial.print("DS3231:"); Serial.println(RTCClock::PrintClock(t0));
-  t0 = RTCClock::GetTime(RTC_DS1302, pin1302);
+  t0 = RTCClock::GetClock(RTC_DS1302, pin1302);
   Serial.print("DS1302:"); Serial.println(RTCClock::PrintClock(t0));
   
 
-  RTCClock::SetTime(1678995732LU, 2 * ONE_HOUR, RTC_DS1302, pin1302);
-  RTCClock::SetTime(1678995732LU, 2 * ONE_HOUR, RTC_DS3231, pin1302);
+  RTCClock::SetClock(1678995732LU, 2 * ONE_HOUR, RTC_DS1302, pin1302);
+  RTCClock::SetClock(1678995732LU, 2 * ONE_HOUR, RTC_DS3231, pin1302);
 
-  t0 = RTCClock::GetTime();
+  t0 = RTCClock::GetClock();
   Serial.print("DS3231:"); Serial.println(RTCClock::PrintClock(t0));
-  t0 = RTCClock::GetTime(RTC_DS1302, pin1302);
+  t0 = RTCClock::GetClock(RTC_DS1302, pin1302);
   Serial.print("DS1302:"); Serial.println(RTCClock::PrintClock(t0));
+
   
-/*
+  
+  /*
   t0.tm_year = 99;
   t0.tm_mon = DECEMBER;
   t0.tm_mday = 31;

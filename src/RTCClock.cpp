@@ -5,7 +5,7 @@
 #include <ArduinoJson.h>
 
 
-tm RTCClock::GetTime(RTCType rtcType, DS1302_Pins pins) {
+tm RTCClock::GetClock(RTCType rtcType, DS1302_Pins pins) {
     tm tm0;
     tm0.tm_year = 123;
     
@@ -15,13 +15,15 @@ tm RTCClock::GetTime(RTCType rtcType, DS1302_Pins pins) {
     return tm0;
 }
 
-void RTCClock::SetTime(tm& t, RTCType rtcType, DS1302_Pins pins) {
+void RTCClock::SetClock(tm& t, RTCType rtcType, DS1302_Pins pins) {
+   
     SigmaRTC* rtc = getRtc(rtcType, pins);
     rtc->SetTime(t);
     delete rtc;
 }
 
-void RTCClock::SetTime(time_t t, int tz, RTCType rtcType, DS1302_Pins pins) {
+
+void RTCClock::SetClock(time_t t, int tz, RTCType rtcType, DS1302_Pins pins) {
     SigmaRTC* rtc = getRtc(rtcType, pins);
     rtc->SetTime(t, tz);
     delete rtc;
@@ -318,3 +320,4 @@ RTCType RTCClock::DetectRtcType() {
     }
     return RTC_DS1302;
 }
+
