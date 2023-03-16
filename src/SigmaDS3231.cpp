@@ -1,7 +1,7 @@
 #include "SigmaDS3231.hpp"
 #include <Wire.h>
 
-SigmaDS3231::SigmaDS3231(byte addr) : address(addr), SigmaRTC(RTC_DS3231) {
+SigmaDS3231::SigmaDS3231(byte addr): SigmaRTC(RTC_DS3231), address(addr) {
     Wire.begin();
 }
 
