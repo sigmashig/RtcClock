@@ -16,9 +16,9 @@ public:
     static time_t SyncClock(CalendarServerType type = CAL_SERVER_NTP);
     static bool IsTimestampValid(time_t t);
     static bool IsTimestampValid(tm t);
-    static tm GetTime(RTCType rtcType = RTC_DS3231);
-    static void SetTime(tm& t, RTCType rtcType = RTC_DS3231);
-    static void SetTime(time_t t, int tz = 2 * ONE_HOUR, RTCType rtcType = RTC_DS3231);
+    static tm GetTime(RTCType rtcType = RTC_DS3231, DS1302_Pins pins= { 0,0,0 });
+    static void SetTime(tm& t, RTCType rtcType = RTC_DS3231, DS1302_Pins pins = { 0,0,0 });
+    static void SetTime(time_t t, int tz = 2 * ONE_HOUR, RTCType rtcType = RTC_DS3231, DS1302_Pins pins = { 0,0,0 });
     static char* PrintRaw(tm& t, char* buf);
     static char* PrintClock(tm& t);
     
@@ -29,6 +29,6 @@ private:
     static bool extractBody(EthernetClient* client, char* body);
     static time_t worldTimeApiParseJson(const char* buf);
     static bool httpConnection(EthernetClient* client, const char* url, const char* path, unsigned long port);
-    static SigmaRTC* getRtc(RTCType rtcType = RTC_DS3231);
+    static SigmaRTC* getRtc(RTCType rtcType, DS1302_Pins pins);
 };
 

@@ -1,26 +1,27 @@
 #include "RTCClock.hpp"
 #include "SigmaRTC.hpp"
 #include "SigmaDS3231.hpp"
+#include "SigmaDS1302.hpp"
 #include <ArduinoJson.h>
 
-tm RTCClock::GetTime(RTCType rtcType) {
+tm RTCClock::GetTime(RTCType rtcType, DS1302_Pins pins) {
     tm tm0;
     tm0.tm_year = 123;
     
-    SigmaRTC *rtc = getRtc(rtcType);
+    SigmaRTC *rtc = getRtc(rtcType, pins);
     tm0 = rtc->GetTime();
     delete rtc;
     return tm0;
 }
 
-void RTCClock::SetTime(tm& t, RTCType rtcType) {
-    SigmaRTC *rtc = getRtc(rtcType);
+void RTCClock::SetTime(tm& t, RTCType rtcType, DS1302_Pins pins) {
+    SigmaRTC* rtc = getRtc(rtcType, pins);
     rtc->SetTime(t);
     delete rtc;
 }
 
-void RTCClock::SetTime(time_t t, int tz, RTCType rtcType) {
-    SigmaRTC* rtc = getRtc(rtcType);
+void RTCClock::SetTime(time_t t, int tz, RTCType rtcType, DS1302_Pins pins) {
+    SigmaRTC* rtc = getRtc(rtcType, pins);
     rtc->SetTime(t, tz);
     delete rtc;
 }
@@ -128,7 +129,25 @@ bool RTCClock::IsTimestampValid(time_t t) {
 }
 
 bool RTCClock::IsTimestampValid(tm t) {
-    // TODO: check if timestamp is valid
+    
+    if (t.tm_year < 2023 || t.tm_year >= 2100) {
+        return false;
+    }
+    if (t.tm_mon < 0 || t.tm_mon > 12) {
+        return false;
+    }
+    if (t.tm_mday < 0 || t.tm_mday > month_length(t.tm_year +1900 , t.tm_mon +1)) {
+        return false;
+    }
+    if (t.tm_hour < 0 || t.tm_hour > 23) {
+        return false;
+    }
+    if (t.tm_min < 0 || t.tm_min > 59) {
+        return false;
+    }
+    if (t.tm_sec < 0 || t.tm_sec > 59) {
+        return false;
+    }   
     return t.tm_year > 0;
 }
 
@@ -266,13 +285,16 @@ bool RTCClock::httpConnection(EthernetClient* client, const char* url, const cha
     return res;
 }
 
-SigmaRTC* RTCClock::getRtc(RTCType rtcType) {
+SigmaRTC* RTCClock::getRtc(RTCType rtcType, DS1302_Pins pins) {
     switch (rtcType)
     {
     case RTC_DS3231:
         return new SigmaDS3231();
         break;
-    
+    case RTC_DS1302:
+        Serial.println("RTC_DS1302");
+        return new SigmaDS1302(pins);
+        break;
     default:        
         break;
     }

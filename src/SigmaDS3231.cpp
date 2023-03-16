@@ -13,19 +13,19 @@ tm SigmaDS3231::GetTime() {
     byte res = Wire.endTransmission();
     if (res == 0) {
         Wire.requestFrom(address, (byte)7);
-        tm0.tm_sec = unpackRegister(Wire.read());
-        tm0.tm_min = unpackRegister(Wire.read());
+        tm0.tm_sec = decodeRegister(Wire.read());
+        tm0.tm_min = decodeRegister(Wire.read());
         tm0.tm_hour = unpackHours(Wire.read());
         tm0.tm_wday = Wire.read();
-        tm0.tm_mday = unpackRegister(Wire.read());
+        tm0.tm_mday = decodeRegister(Wire.read());
         byte m = Wire.read();
-        tm0.tm_year = unpackRegister(Wire.read()) /*+ basicYear*/;
+        tm0.tm_year = decodeRegister(Wire.read()) /*+ basicYear*/;
         if (m & 0x80) { // this is a century bit
             tm0.tm_year += 100;
             m &= 0x1F;
            
         }
-        tm0.tm_mon = unpackRegister(m);
+        tm0.tm_mon = decodeRegister(m);
         tm0.tm_mon--;
     }
     Wire.end();
@@ -65,14 +65,6 @@ void SigmaDS3231::SetTime(tm& t) {
 }
 
 
-
-byte SigmaDS3231::unpackRegister(byte data) {
-    return ((data >> 4) * 10 + (data & 0xF));
-}
-
-byte SigmaDS3231::encodeRegister(byte data) {
-    return (((data / 10) << 4) | (data % 10));
-}
 
 byte SigmaDS3231::unpackHours(byte data) {
     if (data & 0x20)

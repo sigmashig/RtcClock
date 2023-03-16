@@ -63,3 +63,11 @@ void SigmaRTC::SetTime(time_t t, int tz) {
     SetTime(tm0);
 }
 
+
+byte SigmaRTC::decodeRegister(byte data) {
+    return ((data >> 4) * 10 + (data & 0xF));
+}
+
+byte SigmaRTC::encodeRegister(byte data) {
+    return (((data / 10) << 4) | (data % 10));
+}
