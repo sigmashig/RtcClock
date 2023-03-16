@@ -26,6 +26,7 @@ tm SigmaDS3231::GetTime() {
            
         }
         tm0.tm_mon = unpackRegister(m);
+        tm0.tm_mon--;
     }
     Wire.end();
     tm0.tm_isdst = -1;
@@ -58,10 +59,11 @@ void SigmaDS3231::SetTime(tm& t) {
     Wire.write(encodeHours(t.tm_hour));
     Wire.write(t.tm_wday);
     Wire.write(encodeRegister(t.tm_mday));
-    Wire.write(encodeMonth(t.tm_mon, t.tm_year));
+    Wire.write(encodeMonth(t.tm_mon+1, t.tm_year));
     Wire.write(encodeRegister(t.tm_year));
     Wire.endTransmission();
 }
+
 
 
 byte SigmaDS3231::unpackRegister(byte data) {

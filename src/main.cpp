@@ -13,34 +13,75 @@ void setup() {
   //t = rClock.GetTime();
 
   t0.tm_year = 99;
-  t0.tm_mon = 12;
+  t0.tm_mon = 11;
   t0.tm_mday = 31;
   t0.tm_hour = 23;
   t0.tm_min = 59;
   t0.tm_sec = 55;
-  t0.tm_wday = 8;
+  t0.tm_wday = 0;
 
-  strcpy(buf, RTCClock::Print0(t0));
+  RTCClock::PrintRaw(t0, buf);
   Serial.print("Initial time: ");
   Serial.println(buf);
+  Serial.print("FormatI time: ");
+  Serial.println(RTCClock::PrintClock(t0));
   RTCClock::SetTime(t0);
-  
   t1 = RTCClock::GetTime();
-  //strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S %w %z %a %A", &t);
-  strcpy(buf, RTCClock::Print0(t1));
   Serial.print("Get time: ");
-  Serial.println(buf);
+  Serial.println(RTCClock::PrintClock(t1));
+
+  Serial.println("Init Ethernet with DHCP");
+  byte mac[6] = { 0x00, 0xAA, 0x22, 0x07, 0x69, 0x07 };
+
+  if (Ethernet.begin(mac) == 0) {
+    Serial.println("Failed to configure Ethernet using DHCP");
+    // Check for Ethernet hardware present
+    if (Ethernet.hardwareStatus() == EthernetNoHardware) {
+      Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
+    } else if (Ethernet.linkStatus() == LinkOFF) {
+      Serial.println("Ethernet cable is not connected.");
+    } else {
+      Serial.println("Ethernet shield was found but DHCP failed to configure.  Try again.");
+      //Ethernet.begin(mac, ip);
+    }
+  }
+  EthernetLinkStatus link = Ethernet.linkStatus();
+  if (EthernetLinkStatus::LinkOFF != link) {
+    Serial.println("Ethernet has been initialized");
+    //delay(1000);
+  } else {
+    Serial.println("Can't connect to Ethernet=");
+  }
+  Serial.print("DNS: ");
+  Ethernet.dnsServerIP().printTo(Serial);
+  Serial.println();
+  Ethernet.localIP().printTo(Serial);
+  Serial.println();
+
+
+  time_t t_sync;
+  t_sync = RTCClock::SyncClock();
+  RTCClock::SetTime(t_sync);
+  t1 = RTCClock::GetTime();
+  Serial.print("Sync time: ");
+  Serial.println(RTCClock::PrintClock(t1));
+
 }
 
 void loop() {
+  /*
   // put your main code here, to run repeatedly:
   char buf[100];
   tm t1;
   
   t1 = RTCClock::GetTime();
-  //strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S %w %z %a %A", &t);
-  strcpy(buf, RTCClock::Print0(t1));
-  Serial.print("Get time: ");
+  strcpy(buf, RTCClock::PrintClock(t1));
+  Serial.println("Get time: ");
+  Serial.print("Format time: ");
+  Serial.println(buf);
+  strcpy(buf, RTCClock::PrintRaw(t1));
+  Serial.print("Raw    time: ");
   Serial.println(buf);
   delay(1500);
+*/
 }

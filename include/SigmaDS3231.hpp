@@ -7,6 +7,7 @@ public:
     SigmaDS3231(byte addr = 0x68);
     tm GetTime();
     void SetTime(tm& t);
+
     ~SigmaDS3231() {};
 private:
     const byte address;
