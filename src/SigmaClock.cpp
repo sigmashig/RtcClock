@@ -1,11 +1,11 @@
-#include "RTCClock.hpp"
+#include "SigmaClock.hpp"
 #include "SigmaRTC.hpp"
 #include "SigmaDS3231.hpp"
 #include "SigmaDS1302.hpp"
 #include <ArduinoJson.h>
 
 
-tm RTCClock::GetClock(RTCType rtcType, DS1302_Pins pins) {
+tm SigmaClock::GetClock(RTCType rtcType, DS1302_Pins pins) {
     tm tm0;
     tm0.tm_year = 123;
     
@@ -15,7 +15,7 @@ tm RTCClock::GetClock(RTCType rtcType, DS1302_Pins pins) {
     return tm0;
 }
 
-void RTCClock::SetClock(tm& t, RTCType rtcType, DS1302_Pins pins) {
+void SigmaClock::SetClock(tm& t, RTCType rtcType, DS1302_Pins pins) {
    
     SigmaRTC* rtc = getRtc(rtcType, pins);
     rtc->SetTime(t);
@@ -23,25 +23,25 @@ void RTCClock::SetClock(tm& t, RTCType rtcType, DS1302_Pins pins) {
 }
 
 
-void RTCClock::SetClock(time_t t, int tz, RTCType rtcType, DS1302_Pins pins) {
+void SigmaClock::SetClock(time_t t, int tz, RTCType rtcType, DS1302_Pins pins) {
     SigmaRTC* rtc = getRtc(rtcType, pins);
     rtc->SetTime(t, tz);
     delete rtc;
 }
 
 
-char* RTCClock::PrintRaw(tm& t, char* buf) {
+char* SigmaClock::PrintRaw(tm& t, char* buf) {
     sprintf(buf, "%d/%d/%d %d:%d:%d %d %d %d", t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, t.tm_wday, t.tm_yday, t.tm_isdst);
     return buf;
 }
 
-char* RTCClock::PrintClock(tm& t) {
+char* SigmaClock::PrintClock(tm& t) {
     static char strClock[50];
     strftime(strClock, sizeof(strClock), "%Y-%m-%d %H:%M:%S %A (%w) [%b %B]", &t);
     return strClock;
 }
 
-_WEEK_DAYS_ RTCClock::DayYesterday(_WEEK_DAYS_ day) {
+_WEEK_DAYS_ SigmaClock::DayYesterday(_WEEK_DAYS_ day) {
     if (day == MONDAY) {
         day = SUNDAY;
     } else {
@@ -51,7 +51,7 @@ _WEEK_DAYS_ RTCClock::DayYesterday(_WEEK_DAYS_ day) {
 }
 
 
-time_t RTCClock::getNtpTime() {
+time_t SigmaClock::getNtpTime() {
     EthernetUDP Udp;
     unsigned int localPort = 8888;       // local port to listen for UDP packets
     char timeServer[] = "pool.ntp.org"; // NTP server
@@ -111,7 +111,7 @@ time_t RTCClock::getNtpTime() {
     return seconds;
 }
 
-time_t RTCClock::SyncClock(CalendarServerType type) {
+time_t SigmaClock::SyncClock(CalendarServerType type) {
     time_t t = 0;
     if (Ethernet.linkStatus() != LinkOFF) {
         switch (type) {
@@ -126,12 +126,12 @@ time_t RTCClock::SyncClock(CalendarServerType type) {
     return t;
 }
 
-bool RTCClock::IsTimestampValid(time_t t) {
+bool SigmaClock::IsTimestampValid(time_t t) {
     // TODO: check if timestamp is valid
     return t > 0;
 }
 
-bool RTCClock::IsTimestampValid(tm t) {
+bool SigmaClock::IsTimestampValid(tm t) {
     
     if (t.tm_year < 2023 || t.tm_year >= 2100) {
         return false;
@@ -155,7 +155,7 @@ bool RTCClock::IsTimestampValid(tm t) {
 }
 
 
-time_t RTCClock::readWorldTimeApi() {
+time_t SigmaClock::readWorldTimeApi() {
     EthernetClient* client = new EthernetClient();
     const char* server = "worldtimeapi.org";
     char* path = (char*)"/api/timezone/GMT";
@@ -169,7 +169,7 @@ time_t RTCClock::readWorldTimeApi() {
     return t;
 }
 
-time_t RTCClock::worldTimeApiParseResponse(EthernetClient* client) {
+time_t SigmaClock::worldTimeApiParseResponse(EthernetClient* client) {
     char buf[512];
     time_t t=0;
 
@@ -179,7 +179,7 @@ time_t RTCClock::worldTimeApiParseResponse(EthernetClient* client) {
     return t;
 }
 
-bool RTCClock::extractBody(EthernetClient* client, char* body) {
+bool SigmaClock::extractBody(EthernetClient* client, char* body) {
     bool res = false;
     String s;
 
@@ -200,7 +200,7 @@ bool RTCClock::extractBody(EthernetClient* client, char* body) {
 
 
 
-time_t RTCClock::worldTimeApiParseJson(const char* buf) {
+time_t SigmaClock::worldTimeApiParseJson(const char* buf) {
     time_t t = 0;
     
     if (buf[0] != 0) {
@@ -240,7 +240,7 @@ time_t RTCClock::worldTimeApiParseJson(const char* buf) {
 
 
 
-bool RTCClock::httpConnection(EthernetClient* client, const char* url, const char* path, unsigned long port) {
+bool SigmaClock::httpConnection(EthernetClient* client, const char* url, const char* path, unsigned long port) {
 
     int numbTry = 0;
     int len = 0;
@@ -288,7 +288,7 @@ bool RTCClock::httpConnection(EthernetClient* client, const char* url, const cha
     return res;
 }
 
-SigmaRTC* RTCClock::getRtc(RTCType rtcType, DS1302_Pins pins) {
+SigmaRTC* SigmaClock::getRtc(RTCType rtcType, DS1302_Pins pins) {
     switch (rtcType)
     {
     case RTC_DS3231:
@@ -313,7 +313,7 @@ SigmaRTC* RTCClock::getRtc(RTCType rtcType, DS1302_Pins pins) {
     return nullptr;
 }
 
-RTCType RTCClock::DetectRtcType() {
+RTCType SigmaClock::DetectRtcType() {
     SigmaDS3231 rtc1;
     if (rtc1.IsConnected()) {
         return RTC_DS3231;

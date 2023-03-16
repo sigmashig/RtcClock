@@ -3,7 +3,7 @@
 #include "SigmaRTC.hpp"
 #include "Ethernet.h"
 
-class RTCClock {
+class SigmaClock {
 public:
     typedef enum {
         CAL_SERVER_WORLDTIMEAPI,

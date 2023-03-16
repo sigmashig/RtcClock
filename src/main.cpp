@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <time.h>
-#include "RTCClock.hpp"
+#include "SigmaClock.hpp"
 
 DS1302_Pins pin1302 = { 14,15,16 };
 void setup() {
@@ -13,21 +13,21 @@ void setup() {
   //RTCClock rClock = RTCClock();
   //t = rClock.GetTime();
 
-  Serial.print("Type:"); Serial.println(RTCClock::DetectRtcType());
+  Serial.print("Type:"); Serial.println(SigmaClock::DetectRtcType());
 
-  t0 = RTCClock::GetClock();
-  Serial.print("DS3231:"); Serial.println(RTCClock::PrintClock(t0));
-  t0 = RTCClock::GetClock(RTC_DS1302, pin1302);
-  Serial.print("DS1302:"); Serial.println(RTCClock::PrintClock(t0));
+  t0 = SigmaClock::GetClock();
+  Serial.print("DS3231:"); Serial.println(SigmaClock::PrintClock(t0));
+  t0 = SigmaClock::GetClock(RTC_DS1302, pin1302);
+  Serial.print("DS1302:"); Serial.println(SigmaClock::PrintClock(t0));
   
 
-  RTCClock::SetClock(1678995732LU, 2 * ONE_HOUR, RTC_DS1302, pin1302);
-  RTCClock::SetClock(1678995732LU, 2 * ONE_HOUR, RTC_DS3231, pin1302);
+  SigmaClock::SetClock(1678995732LU, 2 * ONE_HOUR, RTC_DS1302, pin1302);
+  SigmaClock::SetClock(1678995732LU, 2 * ONE_HOUR, RTC_DS3231, pin1302);
 
-  t0 = RTCClock::GetClock();
-  Serial.print("DS3231:"); Serial.println(RTCClock::PrintClock(t0));
-  t0 = RTCClock::GetClock(RTC_DS1302, pin1302);
-  Serial.print("DS1302:"); Serial.println(RTCClock::PrintClock(t0));
+  t0 = SigmaClock::GetClock();
+  Serial.print("DS3231:"); Serial.println(SigmaClock::PrintClock(t0));
+  t0 = SigmaClock::GetClock(RTC_DS1302, pin1302);
+  Serial.print("DS1302:"); Serial.println(SigmaClock::PrintClock(t0));
 
   
   
