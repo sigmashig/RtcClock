@@ -8,7 +8,7 @@ public:
     SigmaDS1302(DS1302_Pins& pins);
     tm GetTime();
     void SetTime(tm& t);
-
+    bool IsConnected(void){ return true; }; // there is no possibility to check if the RTC is connected
     ~SigmaDS1302();
 private:
     const byte cePin;

@@ -57,9 +57,11 @@ SigmaRTC::SigmaRTC(RTCType type) {
 
 void SigmaRTC::SetTime(time_t t, int tz) {
     tm tm0;
+    time_t t0 = t - UNIX_OFFSET;
+    
     set_zone(tz);
     set_dst(ua_dst);
-    localtime_r(&t, &tm0);
+    localtime_r(&t0, &tm0);
     SetTime(tm0);
 }
 

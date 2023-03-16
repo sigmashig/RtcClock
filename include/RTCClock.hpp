@@ -16,7 +16,8 @@ public:
     static time_t SyncClock(CalendarServerType type = CAL_SERVER_NTP);
     static bool IsTimestampValid(time_t t);
     static bool IsTimestampValid(tm t);
-    static tm GetTime(RTCType rtcType = RTC_DS3231, DS1302_Pins pins= { 0,0,0 });
+    static RTCType DetectRtcType();
+static tm GetTime(RTCType rtcType = RTC_DS3231, DS1302_Pins pins= { 0,0,0 });
     static void SetTime(tm& t, RTCType rtcType = RTC_DS3231, DS1302_Pins pins = { 0,0,0 });
     static void SetTime(time_t t, int tz = 2 * ONE_HOUR, RTCType rtcType = RTC_DS3231, DS1302_Pins pins = { 0,0,0 });
     static char* PrintRaw(tm& t, char* buf);

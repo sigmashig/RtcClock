@@ -1,7 +1,7 @@
 #include "SigmaDS3231.hpp"
 #include <Wire.h>
 
-SigmaDS3231::SigmaDS3231(byte addr) : address(addr) {
+SigmaDS3231::SigmaDS3231(byte addr) : address(addr), SigmaRTC(RTC_DS3231) {
     Wire.begin();
 }
 
@@ -32,6 +32,12 @@ tm SigmaDS3231::GetTime() {
     tm0.tm_isdst = -1;
     tm0.tm_yday = -1;
     return tm0;
+}
+
+bool SigmaDS3231::IsConnected(void) {
+    Wire.begin();                       // Инит шины
+    Wire.beginTransmission(address);      // Зовем DS3231 по адресу
+    return (!Wire.endTransmission());   // если никто не откликнулся - возвращаем false
 }
 
 

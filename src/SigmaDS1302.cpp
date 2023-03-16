@@ -66,7 +66,7 @@ byte SigmaDS1302::hourFromRegisterValue(const byte value) {
 }
 SigmaDS1302::~SigmaDS1302() {}
 
-SigmaDS1302::SigmaDS1302(DS1302_Pins& pins): cePin(pins.cePin), ioPin(pins.datPin), sclkPin(pins.clkPin) {
+SigmaDS1302::SigmaDS1302(DS1302_Pins& pins): cePin(pins.cePin), ioPin(pins.datPin), sclkPin(pins.clkPin), SigmaRTC(RTC_DS1302) {
 
     digitalWrite(cePin, LOW);
     pinMode(cePin, OUTPUT);

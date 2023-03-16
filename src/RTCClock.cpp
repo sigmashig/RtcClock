@@ -4,6 +4,7 @@
 #include "SigmaDS1302.hpp"
 #include <ArduinoJson.h>
 
+
 tm RTCClock::GetTime(RTCType rtcType, DS1302_Pins pins) {
     tm tm0;
     tm0.tm_year = 123;
@@ -292,11 +293,28 @@ SigmaRTC* RTCClock::getRtc(RTCType rtcType, DS1302_Pins pins) {
         return new SigmaDS3231();
         break;
     case RTC_DS1302:
-        Serial.println("RTC_DS1302");
         return new SigmaDS1302(pins);
         break;
-    default:        
+    case RTC_AUTODETECT:
+        if (pins.cePin==0 || pins.datPin==0 || pins.clkPin==0) {
+            return new SigmaDS3231();
+        }
+        else {
+            SigmaRTC* rtc = new SigmaDS3231();
+            if (rtc->IsConnected()) {
+                return rtc;
+            }
+            return new SigmaDS1302(pins);
+        }
         break;
     }
     return nullptr;
+}
+
+RTCType RTCClock::DetectRtcType() {
+    SigmaDS3231 rtc1;
+    if (rtc1.IsConnected()) {
+        return RTC_DS3231;
+    }
+    return RTC_DS1302;
 }

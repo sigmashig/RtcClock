@@ -6,6 +6,7 @@ class SigmaDS3231 : public SigmaRTC{
 public:
     SigmaDS3231(byte addr = 0x68);
     tm GetTime();
+    bool IsConnected(void);
     void SetTime(tm& t);
 
     ~SigmaDS3231() {};

@@ -21,6 +21,7 @@ public:
     virtual void SetTime(tm& t) = 0;
     void SetTime(time_t t, int tz = 2*ONE_HOUR);
     virtual ~SigmaRTC() {};
+    virtual bool IsConnected() = 0;
     RTCType type;
 protected:
     byte decodeRegister(byte data);
