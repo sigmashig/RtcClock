@@ -1,0 +1,22 @@
+{
+    "name": "SigmaClock",
+    "version": "0.1.0",
+    "description": "The library, supports a RTC modules DS1302 and DS3231 simultatneously. Using a standard time.h structure.",
+    "keywords": "DS1302, DS3231",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sigmashig/RtcClock.git"
+    },
+    "authors": [
+        {
+            "name": "Ihor Shevchenko",
+            "email": "igor@ishevchenko.net",
+            "url": ""
+        }
+    ],
+    "license": "MIT",
+    "homepage": "",
+    "dependencies": {},
+    "frameworks": "*",
+    "platforms": "*"
+}

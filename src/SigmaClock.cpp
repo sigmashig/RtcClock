@@ -8,15 +8,15 @@
 tm SigmaClock::GetClock(RTCType rtcType, DS1302_Pins pins) {
     tm tm0;
     tm0.tm_year = 123;
-    
-    SigmaRTC *rtc = getRtc(rtcType, pins);
+
+    SigmaRTC* rtc = getRtc(rtcType, pins);
     tm0 = rtc->GetTime();
     delete rtc;
     return tm0;
 }
 
 void SigmaClock::SetClock(tm& t, RTCType rtcType, DS1302_Pins pins) {
-   
+
     SigmaRTC* rtc = getRtc(rtcType, pins);
     rtc->SetTime(t);
     delete rtc;
@@ -59,7 +59,6 @@ time_t SigmaClock::getNtpTime() {
     byte packetBuffer[NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
 
     unsigned long seconds = 0;
-    Serial.println("Starting connection to server...");
     Udp.begin(localPort);
     // set all bytes in the buffer to 0
     memset(packetBuffer, 0, NTP_PACKET_SIZE);
@@ -81,16 +80,13 @@ time_t SigmaClock::getNtpTime() {
     Udp.beginPacket(timeServer, 123); // NTP requests are to port 123
     Udp.write(packetBuffer, NTP_PACKET_SIZE);
     Udp.endPacket();
-    Serial.println("Waiting for response...");
     int nTry = 20;
     int ret = 0;
     while (ret != 48 && nTry > 0) {
         delay(100);
         ret = Udp.parsePacket();
-        Serial.println(".");
         nTry--;
     }
-    Serial.print("Response received: ");Serial.println(ret);
     if (ret == 48) {
         // We've received a packet, read the data from it
         Udp.read(packetBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
@@ -104,10 +100,9 @@ time_t SigmaClock::getNtpTime() {
          // this is NTP time (seconds since Jan 1 1900):
         seconds = highWord << 16 | lowWord;
         //seconds -= 2208988800UL; // subtract seventy years: 1970-1900 NTP_OFFSET
-        seconds -= NTP_OFFSET;
+        seconds += -NTP_OFFSET + UNIX_OFFSET;
     }
     Udp.stop();
-    Serial.print("Seconds since Jan 1 1970 = ");Serial.println(seconds);
     return seconds;
 }
 
@@ -132,14 +127,14 @@ bool SigmaClock::IsTimestampValid(time_t t) {
 }
 
 bool SigmaClock::IsTimestampValid(tm t) {
-    
+
     if (t.tm_year < 2023 || t.tm_year >= 2100) {
         return false;
     }
     if (t.tm_mon < 0 || t.tm_mon > 12) {
         return false;
     }
-    if (t.tm_mday < 0 || t.tm_mday > month_length(t.tm_year +1900 , t.tm_mon +1)) {
+    if (t.tm_mday < 0 || t.tm_mday > month_length(t.tm_year + 1900, t.tm_mon + 1)) {
         return false;
     }
     if (t.tm_hour < 0 || t.tm_hour > 23) {
@@ -150,7 +145,7 @@ bool SigmaClock::IsTimestampValid(tm t) {
     }
     if (t.tm_sec < 0 || t.tm_sec > 59) {
         return false;
-    }   
+    }
     return t.tm_year > 0;
 }
 
@@ -159,7 +154,7 @@ time_t SigmaClock::readWorldTimeApi() {
     EthernetClient* client = new EthernetClient();
     const char* server = "worldtimeapi.org";
     char* path = (char*)"/api/timezone/GMT";
-    time_t t=0;
+    time_t t = 0;
 
     if (httpConnection(client, server, path, 80)) {
         t = worldTimeApiParseResponse(client);
@@ -171,7 +166,7 @@ time_t SigmaClock::readWorldTimeApi() {
 
 time_t SigmaClock::worldTimeApiParseResponse(EthernetClient* client) {
     char buf[512];
-    time_t t=0;
+    time_t t = 0;
 
     if (extractBody(client, buf)) {
         t = worldTimeApiParseJson(buf);
@@ -202,7 +197,7 @@ bool SigmaClock::extractBody(EthernetClient* client, char* body) {
 
 time_t SigmaClock::worldTimeApiParseJson(const char* buf) {
     time_t t = 0;
-    
+
     if (buf[0] != 0) {
         //const size_t CAPACITY = JSON_OBJECT_SIZE(25);
         StaticJsonDocument<400> doc;
@@ -247,16 +242,12 @@ bool SigmaClock::httpConnection(EthernetClient* client, const char* url, const c
     bool res = false;
     unsigned int connRes;
 
-    Serial.println("Connecting to server");
     while (numbTry < 3 && len == 0) {
         numbTry++;
 
-        Serial.println(numbTry);
-        Serial.println(url);
         connRes = client->connect(url, port);
         if (connRes) {
             // Make a HTTP request:
-            Serial.println("Connected to server");
             char buf[100];
             sprintf(buf, "GET %s HTTP/1.1", path);
             client->println(buf);
@@ -267,21 +258,16 @@ bool SigmaClock::httpConnection(EthernetClient* client, const char* url, const c
 
             int nTry = 0;
             len = client->available();
-            Serial.println(len);
             while (nTry <= 5 && len == 0) {
                 delay(2000);
                 nTry++;
                 len = client->available();
             }
-            Serial.print("len=");
-            Serial.println(len);
 
         } else {
-            Serial.println("Connection failed");
             break;
         }
     }
-    Serial.println("Connection done");
     if (len != 0) {
         res = true;
     }
@@ -289,8 +275,7 @@ bool SigmaClock::httpConnection(EthernetClient* client, const char* url, const c
 }
 
 SigmaRTC* SigmaClock::getRtc(RTCType rtcType, DS1302_Pins pins) {
-    switch (rtcType)
-    {
+    switch (rtcType) {
     case RTC_DS3231:
         return new SigmaDS3231();
         break;
@@ -298,10 +283,9 @@ SigmaRTC* SigmaClock::getRtc(RTCType rtcType, DS1302_Pins pins) {
         return new SigmaDS1302(pins);
         break;
     case RTC_AUTODETECT:
-        if (pins.cePin==0 || pins.datPin==0 || pins.clkPin==0) {
+        if (pins.cePin == 0 || pins.datPin == 0 || pins.clkPin == 0) {
             return new SigmaDS3231();
-        }
-        else {
+        } else {
             SigmaRTC* rtc = new SigmaDS3231();
             if (rtc->IsConnected()) {
                 return rtc;

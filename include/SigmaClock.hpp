@@ -17,9 +17,9 @@ public:
     static bool IsTimestampValid(time_t t);
     static bool IsTimestampValid(tm t);
     static RTCType DetectRtcType();
-    static tm GetClock(RTCType rtcType = RTC_DS3231, DS1302_Pins pins= { 0,0,0 });
-    static void SetClock(tm& t, RTCType rtcType = RTC_DS3231, DS1302_Pins pins = { 0,0,0 });
-    static void SetClock(time_t t, int tz = 2 * ONE_HOUR, RTCType rtcType = RTC_DS3231, DS1302_Pins pins = { 0,0,0 });
+    static tm GetClock(RTCType rtcType = RTC_AUTODETECT, DS1302_Pins pins= { 0,0,0 });
+    static void SetClock(tm& t, RTCType rtcType = RTC_AUTODETECT, DS1302_Pins pins = { 0,0,0 });
+    static void SetClock(time_t t, int tz = 2 * ONE_HOUR, RTCType rtcType = RTC_AUTODETECT, DS1302_Pins pins = { 0,0,0 });
     static char* PrintRaw(tm& t, char* buf);
     static char* PrintClock(tm& t);
     
