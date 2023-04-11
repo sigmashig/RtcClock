@@ -1,6 +1,9 @@
 #pragma once
-
+#ifdef ESP8266
+#include <Esp.h>
+#else
 #include <Arduino.h>
+#endif
 #include "SigmaRTC.hpp"
 
 class SigmaDS1302: public SigmaRTC {

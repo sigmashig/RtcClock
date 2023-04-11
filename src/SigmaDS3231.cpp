@@ -28,7 +28,9 @@ tm SigmaDS3231::GetTime() {
         tm0.tm_mon = decodeRegister(m);
         tm0.tm_mon--;
     }
+#ifndef ESP8266
     Wire.end();
+#endif
     tm0.tm_isdst = -1;
     tm0.tm_yday = -1;
     return tm0;

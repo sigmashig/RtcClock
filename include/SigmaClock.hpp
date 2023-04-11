@@ -1,7 +1,20 @@
 #pragma once
+#ifdef ESP8266
+#include <Esp.h>
+#else
+#include <Arduino.h>
+#endif
+
+#ifdef ESP8266
+#include <WiFiClient.h>
+#include <WiFiUdp.h>
+#else
+#include <EthernetUdp.h>
+#endif
 #include <time.h>
+#include "SigmaTime.hpp"
 #include "SigmaRTC.hpp"
-#include "Ethernet.h"
+#include <Client.h>
 
 class SigmaClock {
 public:
@@ -22,16 +35,19 @@ public:
     static void SetClock(time_t t, int tz = 2 * ONE_HOUR, RTCType rtcType = RTC_AUTODETECT, DS1302_Pins pins = { 0,0,0 });
     static char* PrintRaw(tm& t, char* buf);
     static char* PrintClock(tm& t);
-    
+#ifdef ESP8266
+    static void SyncClockAsync(int tz, int dst = -1, tm* lTime = nullptr);
+    static time_t SyncClockSync(int tz, int dst = -1, tm* lTime = nullptr);
+#endif
+    static int GetDstUA(const time_t* timer, int32_t* unused = nullptr);
 private:
- 
    
     static time_t getNtpTime();
     static time_t readWorldTimeApi();
-    static time_t worldTimeApiParseResponse(EthernetClient* client);
-    static bool extractBody(EthernetClient* client, char* body);
+    static time_t worldTimeApiParseResponse(Client* client);
+    static bool extractBody(Client* client, char* body);
     static time_t worldTimeApiParseJson(const char* buf);
-    static bool httpConnection(EthernetClient* client, const char* url, const char* path, unsigned long port);
+    static bool httpConnection(Client* client, const char* url, const char* path, unsigned long port);
     static SigmaRTC* getRtc(RTCType rtcType, DS1302_Pins pins);
 };
 
