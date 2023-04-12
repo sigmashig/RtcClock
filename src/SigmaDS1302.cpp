@@ -66,14 +66,20 @@ byte SigmaDS1302::hourFromRegisterValue(const byte value) {
 }
 SigmaDS1302::~SigmaDS1302() {}
 
+bool SigmaDS1302::isValid() {
+    return (cePin!=0 && ioPin!=0 && sclkPin!=0);
+}
+
+
 SigmaDS1302::SigmaDS1302(DS1302_Pins& pins): SigmaRTC(RTC_DS1302),
 cePin(pins.cePin), ioPin(pins.datPin), sclkPin(pins.clkPin) {
-
-    digitalWrite(cePin, LOW);
-    pinMode(cePin, OUTPUT);
-    pinMode(ioPin, INPUT);
-    digitalWrite(sclkPin, LOW);
-    pinMode(sclkPin, OUTPUT);
+    if (!isValid()) {
+        digitalWrite(cePin, LOW);
+        pinMode(cePin, OUTPUT);
+        pinMode(ioPin, INPUT);
+        digitalWrite(sclkPin, LOW);
+        pinMode(sclkPin, OUTPUT);
+    }
 }
 
 void SigmaDS1302::writeOut(const byte value, bool readAfter) {
@@ -113,7 +119,7 @@ byte SigmaDS1302::readIn() {
         bit = digitalRead(ioPin);
         input_value |= (bit << i);  // Bits are read LSB first.
     }
-
+    Serial.print("readIn=");Serial.println(input_value);
     return input_value;
 }
 
@@ -145,9 +151,22 @@ void SigmaDS1302::halt(const bool enable) {
 }
 
 tm SigmaDS1302::GetTime() {
-    const SPISession s(cePin, ioPin, sclkPin);
     tm t;
-
+    Serial.println("Point0");
+    if (!isValid()) {
+        t.tm_sec = 0;
+        t.tm_min = 0;
+        t.tm_hour = 0;
+        t.tm_mday = 0;
+        t.tm_mon = 0;
+        t.tm_wday = 0;
+        t.tm_year = 0;
+        t.tm_isdst = -1;  // DST information not available.
+        t.tm_yday = -1;   // Day of year not available.
+        return t;
+    }
+    Serial.println("Point1");
+    const SPISession s(cePin, ioPin, sclkPin);
     writeOut(kClockBurstRead, true);
     t.tm_sec = bcdToDec(readIn() & 0x7F);
     t.tm_min = bcdToDec(readIn());
@@ -162,6 +181,7 @@ tm SigmaDS1302::GetTime() {
 }
 
 void SigmaDS1302::SetTime(tm& t) {
+    if (!isValid()) return;
     // We want to maintain the Clock Halt flag if it is set.
     const byte ch_value = readRegister(kSecondReg) & 0x80;
 

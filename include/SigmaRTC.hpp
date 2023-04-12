@@ -1,6 +1,12 @@
 #pragma once
+#ifdef ESP8266
+#include <Esp.h>
+#else
 #include <Arduino.h>
+#endif
 #include <time.h>
+#include "SigmaTime.hpp"
+
 
 typedef enum {
     RTC_AUTODETECT,

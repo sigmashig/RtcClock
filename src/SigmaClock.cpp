@@ -3,7 +3,9 @@
 #include "SigmaDS3231.hpp"
 #include "SigmaDS1302.hpp"
 #include <ArduinoJson.h>
-
+//#include <Udp.h>
+//#include <EthernetUdp.h>
+//#include <WiFiUdp.h>
 
 tm SigmaClock::GetClock(RTCType rtcType, DS1302_Pins pins) {
     tm tm0;
@@ -31,13 +33,17 @@ void SigmaClock::SetClock(time_t t, int tz, RTCType rtcType, DS1302_Pins pins) {
 
 
 char* SigmaClock::PrintRaw(tm& t, char* buf) {
-    sprintf(buf, "%d/%d/%d %d:%d:%d %d %d %d", t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, t.tm_wday, t.tm_yday, t.tm_isdst);
+    sprintf(buf, "%d/%d/%d %d:%d:%d wday=%d yday=%d dst=%d", t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, t.tm_wday, t.tm_yday, t.tm_isdst);
     return buf;
 }
 
 char* SigmaClock::PrintClock(tm& t) {
     static char strClock[50];
-    strftime(strClock, sizeof(strClock), "%Y-%m-%d %H:%M:%S %A (%w) [%b %B]", &t);
+    if (!IsTimestampValid(t)) {
+        sprintf(strClock,"Invalid timestamp");
+    } else {
+        strftime(strClock, sizeof(strClock), "%Y-%m-%d %H:%M:%S %A (%w) [%b %B]", &t);
+    }
     return strClock;
 }
 
@@ -52,14 +58,21 @@ _WEEK_DAYS_ SigmaClock::DayYesterday(_WEEK_DAYS_ day) {
 
 
 time_t SigmaClock::getNtpTime() {
+    
+#ifdef ETHERNET
     EthernetUDP Udp;
+#else
+    WiFiUDP Udp;
+#endif
     unsigned int localPort = 8888;       // local port to listen for UDP packets
     char timeServer[] = "pool.ntp.org"; // NTP server
     int NTP_PACKET_SIZE = 48; // NTP time stamp is in the first 48 bytes of the message
     byte packetBuffer[NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
 
     unsigned long seconds = 0;
+ 
     Udp.begin(localPort);
+ 
     // set all bytes in the buffer to 0
     memset(packetBuffer, 0, NTP_PACKET_SIZE);
     // Initialize values needed to form NTP request
@@ -76,10 +89,11 @@ time_t SigmaClock::getNtpTime() {
 
     // all NTP fields have been given values, now
     // you can send a packet requesting a timestamp:
-
+ 
     Udp.beginPacket(timeServer, 123); // NTP requests are to port 123
     Udp.write(packetBuffer, NTP_PACKET_SIZE);
     Udp.endPacket();
+ 
     int nTry = 20;
     int ret = 0;
     while (ret != 48 && nTry > 0) {
@@ -99,24 +113,52 @@ time_t SigmaClock::getNtpTime() {
         // combine the four bytes (two words) into a long integer
          // this is NTP time (seconds since Jan 1 1900):
         seconds = highWord << 16 | lowWord;
+        
         //seconds -= 2208988800UL; // subtract seventy years: 1970-1900 NTP_OFFSET
         seconds += -NTP_OFFSET + UNIX_OFFSET;
     }
+
     Udp.stop();
     return seconds;
 }
 
+#ifdef ESP8266
+void SigmaClock::SyncClockAsync(int tz, int dst, tm* lTime) {
+
+    if (dst < 0) {
+        time_t tCurrent = time(nullptr);
+        dst = GetDstUA(&tCurrent);
+    }
+    
+    configTime(tz, dst, "pool.ntp.org", "time.nist.gov");
+}
+
+time_t SigmaClock::SyncClockSync(int tz, int dst, tm* lTime) {
+
+    SyncClockAsync(tz, dst, lTime);
+    time_t t = time(nullptr);
+    while (t < 8 * 3600 * 2) {
+        delay(500);
+        t = time(nullptr);
+    }
+    if (lTime != nullptr) {
+        localtime_r(&t, lTime);
+        //lTime->tm_isdst = dst;
+    }
+    return t;
+}
+
+#endif
+
 time_t SigmaClock::SyncClock(CalendarServerType type) {
     time_t t = 0;
-    if (Ethernet.linkStatus() != LinkOFF) {
-        switch (type) {
-        case CAL_SERVER_WORLDTIMEAPI:
-            t = readWorldTimeApi();
-            break;
-        case CAL_SERVER_NTP:
-            t = getNtpTime();
-            break;
-        }
+    switch (type) {
+    case CAL_SERVER_WORLDTIMEAPI:
+        t = readWorldTimeApi();
+        break;
+    case CAL_SERVER_NTP:
+        t = getNtpTime();
+        break;
     }
     return t;
 }
@@ -151,7 +193,11 @@ bool SigmaClock::IsTimestampValid(tm t) {
 
 
 time_t SigmaClock::readWorldTimeApi() {
+#ifdef ETHERNET
     EthernetClient* client = new EthernetClient();
+#else
+    WiFiClient* client = new WiFiClient();
+#endif
     const char* server = "worldtimeapi.org";
     char* path = (char*)"/api/timezone/GMT";
     time_t t = 0;
@@ -164,7 +210,7 @@ time_t SigmaClock::readWorldTimeApi() {
     return t;
 }
 
-time_t SigmaClock::worldTimeApiParseResponse(EthernetClient* client) {
+time_t SigmaClock::worldTimeApiParseResponse(Client* client) {
     char buf[512];
     time_t t = 0;
 
@@ -174,7 +220,7 @@ time_t SigmaClock::worldTimeApiParseResponse(EthernetClient* client) {
     return t;
 }
 
-bool SigmaClock::extractBody(EthernetClient* client, char* body) {
+bool SigmaClock::extractBody(Client* client, char* body) {
     bool res = false;
     String s;
 
@@ -235,7 +281,7 @@ time_t SigmaClock::worldTimeApiParseJson(const char* buf) {
 
 
 
-bool SigmaClock::httpConnection(EthernetClient* client, const char* url, const char* path, unsigned long port) {
+bool SigmaClock::httpConnection(Client* client, const char* url, const char* path, unsigned long port) {
 
     int numbTry = 0;
     int len = 0;
@@ -305,3 +351,51 @@ RTCType SigmaClock::DetectRtcType() {
     return RTC_DS1302;
 }
 
+int SigmaClock::GetDstUA(const time_t* timer, int32_t* unused) {
+    struct tm       tmptr;
+    uint8_t         month, mday, hour, day_of_week, d;
+    int             n;
+
+    /* obtain the variables */
+    gmtime_r(timer, &tmptr);
+    month = tmptr.tm_mon;
+    day_of_week = tmptr.tm_wday;
+    mday = tmptr.tm_mday - 1;
+    hour = tmptr.tm_hour;
+
+    if ((month > MARCH) && (month < OCTOBER))
+        return ONE_HOUR;
+
+    if (month < MARCH)
+        return 0;
+    if (month > OCTOBER)
+        return 0;
+
+    /* determine mday of last Sunday */
+    n = tmptr.tm_mday - 1;
+    n -= day_of_week;
+    n += 7;
+    d = n % 7;  /* date of first Sunday */
+
+    n = 31 - d;
+    n /= 7; /* number of Sundays left in the month */
+
+    d = d + 7 * n;  /* mday of final Sunday */
+    if (month == MARCH) {
+        if (d < mday) {
+            return ONE_HOUR;
+        } else if (d > mday) {
+            return 0;
+        } else if (hour < 2) {
+            return 0;
+        }
+        return ONE_HOUR;
+    } else if (d < mday) {
+        return 0;
+    } else if (d > mday) {
+        return ONE_HOUR;
+    } else if (hour < 2) {
+        return ONE_HOUR;
+    }
+    return 0;
+}

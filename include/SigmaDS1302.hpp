@@ -1,6 +1,9 @@
 #pragma once
-
+#ifdef ESP8266
+#include <Esp.h>
+#else
 #include <Arduino.h>
+#endif
 #include "SigmaRTC.hpp"
 
 class SigmaDS1302: public SigmaRTC {
@@ -25,5 +28,5 @@ private:
     byte bcdToDec(const byte bcd);
     byte decToBcd(const byte dec);
     byte hourFromRegisterValue(const byte value);
-
+    bool isValid();
 };

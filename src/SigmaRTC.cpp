@@ -1,5 +1,7 @@
 #include "SigmaRTC.hpp"
-
+#ifdef ESP8266
+#include <TZ.h>
+#endif
 int ua_dst(const time_t* timer, int32_t* z) {
     struct tm       tmptr;
     uint8_t         month, mday, hour, day_of_week, d;
@@ -57,10 +59,14 @@ SigmaRTC::SigmaRTC(RTCType type) {
 
 void SigmaRTC::SetTime(time_t t, int tz) {
     tm tm0;
+#ifdef ESP8266
+    time_t t0 = t;
+    setTZ(TZ_Europe_Kiev);
+#else
     time_t t0 = t - UNIX_OFFSET;
-    
     set_zone(tz);
     set_dst(ua_dst);
+#endif
     localtime_r(&t0, &tm0);
     SetTime(tm0);
 }
