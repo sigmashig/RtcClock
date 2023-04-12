@@ -3,13 +3,9 @@
 #include "SigmaDS3231.hpp"
 #include "SigmaDS1302.hpp"
 #include <ArduinoJson.h>
-//#include <Udp.h>
-//#include <EthernetUdp.h>
-//#include <WiFiUdp.h>
 
 tm SigmaClock::GetClock(RTCType rtcType, DS1302_Pins pins) {
     tm tm0;
-    tm0.tm_year = 123;
 
     SigmaRTC* rtc = getRtc(rtcType, pins);
     tm0 = rtc->GetTime();
@@ -150,16 +146,9 @@ time_t SigmaClock::SyncClockSync(int tz, int dst, tm* lTime) {
 
 #endif
 
-time_t SigmaClock::SyncClock(CalendarServerType type) {
-    time_t t = 0;
-    switch (type) {
-    case CAL_SERVER_WORLDTIMEAPI:
-        t = readWorldTimeApi();
-        break;
-    case CAL_SERVER_NTP:
-        t = getNtpTime();
-        break;
-    }
+time_t SigmaClock::SyncClock() {
+    time_t t;
+    t = getNtpTime();
     return t;
 }
 
@@ -170,7 +159,7 @@ bool SigmaClock::IsTimestampValid(time_t t) {
 
 bool SigmaClock::IsTimestampValid(tm t) {
 
-    if (t.tm_year < 2023 || t.tm_year >= 2100) {
+    if (t.tm_year < 123 || t.tm_year >= 200) {
         return false;
     }
     if (t.tm_mon < 0 || t.tm_mon > 12) {
@@ -191,134 +180,6 @@ bool SigmaClock::IsTimestampValid(tm t) {
     return t.tm_year > 0;
 }
 
-
-time_t SigmaClock::readWorldTimeApi() {
-#ifdef ETHERNET
-    EthernetClient* client = new EthernetClient();
-#else
-    WiFiClient* client = new WiFiClient();
-#endif
-    const char* server = "worldtimeapi.org";
-    char* path = (char*)"/api/timezone/GMT";
-    time_t t = 0;
-
-    if (httpConnection(client, server, path, 80)) {
-        t = worldTimeApiParseResponse(client);
-    }
-    client->stop();
-    delete client;
-    return t;
-}
-
-time_t SigmaClock::worldTimeApiParseResponse(Client* client) {
-    char buf[512];
-    time_t t = 0;
-
-    if (extractBody(client, buf)) {
-        t = worldTimeApiParseJson(buf);
-    }
-    return t;
-}
-
-bool SigmaClock::extractBody(Client* client, char* body) {
-    bool res = false;
-    String s;
-
-    if (client->available()) {
-        s = client->readStringUntil('\n');
-        if (s.indexOf("200 OK") != -1) {
-            while (client->available()) {
-                s = client->readStringUntil('\n');
-            }
-            if (s.length() != 0) {
-                strcpy(body, s.c_str());
-                res = true;
-            }
-        }
-    }
-    return res;
-}
-
-
-
-time_t SigmaClock::worldTimeApiParseJson(const char* buf) {
-    time_t t = 0;
-
-    if (buf[0] != 0) {
-        //const size_t CAPACITY = JSON_OBJECT_SIZE(25);
-        StaticJsonDocument<400> doc;
-        //DynamicJsonDocument doc(200);
-        DeserializationError error = deserializeJson(doc, buf);
-        if (!error) {
-
-            // extract the data
-            JsonObject root = doc.as<JsonObject>();
-            if (root.containsKey("unixtime")) {
-                t = root["unixtime"];
-            }
-            /*
-            if (root.containsKey("datetime")) {
-
-                String s = root["datetime"]; //"2022-01-09T15:32:39.409582+02:00"
-                tm0.tm_year = s.substring(0, 4).toInt() - 1900;
-                tm0.tm_mon = s.substring(5, 7).toInt() - 1;
-                tm0.tm_mday = s.substring(8, 10).toInt() - 1;
-                tm0.tm_hour = s.substring(11, 13).toInt();
-                tm0.tm_min = s.substring(14, 16).toInt();
-                tm0.tm_min = s.substring(17, 19).toInt();
-
-                //  res = true;
-            }
-            else if (root.containsKey("day_of_week")) {
-            //    tm.Wday = root["day_of_week"];
-            //    tm.Wday += 1; //Sunday is 1
-            //}
-*/
-        }
-    }
-    return t;
-}
-
-
-
-bool SigmaClock::httpConnection(Client* client, const char* url, const char* path, unsigned long port) {
-
-    int numbTry = 0;
-    int len = 0;
-    bool res = false;
-    unsigned int connRes;
-
-    while (numbTry < 3 && len == 0) {
-        numbTry++;
-
-        connRes = client->connect(url, port);
-        if (connRes) {
-            // Make a HTTP request:
-            char buf[100];
-            sprintf(buf, "GET %s HTTP/1.1", path);
-            client->println(buf);
-            sprintf(buf, "Host: %s", url);
-            client->println(buf);
-            client->println("Connection: close");
-            client->println();
-
-            int nTry = 0;
-            len = client->available();
-            while (nTry <= 5 && len == 0) {
-                delay(2000);
-                nTry++;
-                len = client->available();
-            }
-
-        } else {
-            break;
-        }
-    }
-    if (len != 0) {
-        res = true;
-    }
-    return res;
-}
 
 SigmaRTC* SigmaClock::getRtc(RTCType rtcType, DS1302_Pins pins) {
     switch (rtcType) {

@@ -6,11 +6,11 @@
 #endif
 
 #ifdef ESP8266
-#define WIFI 2
+//#define WIFI 1
 #include <WiFiClient.h>
 #include <WiFiUdp.h>
 #else
-#define ETHERNET 2
+//#define ETHERNET 1
 #include <EthernetUdp.h>
 #endif
 #include <time.h>
@@ -20,15 +20,9 @@
 
 class SigmaClock {
 public:
-    typedef enum {
-        CAL_SERVER_WORLDTIMEAPI,
-        CAL_SERVER_NTP
-    } CalendarServerType;
 
- 
     static _WEEK_DAYS_ DayYesterday(_WEEK_DAYS_ day);
-
-    static time_t SyncClock(CalendarServerType type = CAL_SERVER_NTP);
+    static time_t SyncClock();
     static bool IsTimestampValid(time_t t);
     static bool IsTimestampValid(tm t);
     static RTCType DetectRtcType();
@@ -51,5 +45,6 @@ private:
     static time_t worldTimeApiParseJson(const char* buf);
     static bool httpConnection(Client* client, const char* url, const char* path, unsigned long port);
     static SigmaRTC* getRtc(RTCType rtcType, DS1302_Pins pins);
+    int datDirection;
 };
 

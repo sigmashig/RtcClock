@@ -28,14 +28,18 @@
 #define DS1302 1
 
 #ifdef ESP8266
-DS1302_Pins pin1302 = { D5,D6,D7 };
+DS1302_Pins pin1302 = { D7,D6,D8 };
 #else
 DS1302_Pins pin1302 = { 14,15,16 };
 #endif
 
 
-void setup() { 
+void setup() {
+#ifdef ESP8266
+  Serial.begin(76000);
+#else
   Serial.begin(115200);
+#endif
   //delay(1000);
   Serial.flush();
   while (!Serial) {
@@ -76,13 +80,14 @@ void setup() {
   Serial.println(SigmaClock::PrintClock(t0));
   // set time in format seconds from 2000 year 2023-03-16 21:42:17 (and timezone)
 
- // SigmaClock::SetClock(1678995732LU, 2 * ONE_HOUR, RTC_DS1302, pin1302);
- // t0 = SigmaClock::GetClock(RTC_DS1302, pin1302);
- // Serial.print("DS1302:"); Serial.println(SigmaClock::PrintClock(t0));
+  SigmaClock::SetClock(1678995732LU, 2 * ONE_HOUR, RTC_DS1302, pin1302);
+  t0 = SigmaClock::GetClock(RTC_DS1302, pin1302);
+  Serial.print("DS1302:Raw:"); Serial.println(SigmaClock::PrintRaw(t0,buf));
+  Serial.print("DS1302:"); Serial.println(SigmaClock::PrintClock(t0));
 #endif 
   
- /*  
-  t0.tm_year = 05;
+  
+  t0.tm_year = 125;
   t0.tm_mon = DECEMBER;
   t0.tm_mday = 31;
   t0.tm_hour = 23;
@@ -102,6 +107,8 @@ void setup() {
 #if DS1302
   SigmaClock::SetClock(t0, RTC_DS1302, pin1302);
   t1 = SigmaClock::GetClock(RTC_DS1302, pin1302);
+  Serial.print("DS1302:RAW: ");
+  Serial.println(SigmaClock::PrintRaw(t1, buf));
   Serial.print("Get time from DS1302: ");
   Serial.println(SigmaClock::PrintClock(t1));
 #endif
@@ -183,7 +190,7 @@ void setup() {
   Serial.println(SigmaClock::PrintClock(t1));
   Serial.print("Raw time: ");
   Serial.println(SigmaClock::PrintRaw(t1, buf));
-*/
+
   Serial.println("Done");
 }
 

@@ -1,5 +1,178 @@
 #include "SigmaDS1302.hpp"
 
+
+byte SigmaDS1302::bcdToDec(const byte bcd) {
+    return (10 * ((bcd & 0xF0) >> 4) + (bcd & 0x0F));
+}
+
+// Returns the binary-coded decimal of 'dec'. Inverse of bcdToDec.
+byte SigmaDS1302::decToBcd(const byte dec) {
+    const byte tens = dec / 10;
+    const byte ones = dec % 10;
+    return (tens << 4) | ones;
+}
+
+bool SigmaDS1302::isValid() {
+    return (cePin != 0 && datPin != 0 && sclkPin != 0);
+}
+
+byte SigmaDS1302::hourFromRegisterValue(const byte value) {
+    byte adj;
+    if (value & 128)  // 12-hour mode
+        adj = 12 * ((value & 32) >> 5);
+    else           // 24-hour mode
+        adj = 10 * ((value & (32 + 16)) >> 4);
+    return (value & 15) + adj;
+}
+
+#ifdef ESP8266
+
+#define REG_SECONDS           0x80
+#define REG_MINUTES           0x82
+#define REG_HOUR              0x84
+#define REG_DATE              0x86
+#define REG_MONTH             0x88
+#define REG_DAY               0x8A
+#define REG_YEAR              0x8C
+#define REG_WP                0x8E
+#define REG_BURST             0xBE
+
+SigmaDS1302::SigmaDS1302(DS1302_Pins& pins): SigmaRTC(RTC_DS1302),
+cePin(pins.cePin), datPin(pins.datPin), sclkPin(pins.clkPin) {
+    datDirection = INPUT;
+    init();
+}
+
+SigmaDS1302::~SigmaDS1302() {}
+
+
+void SigmaDS1302::init() {
+    pinMode(cePin, OUTPUT);
+    pinMode(sclkPin, OUTPUT);
+    pinMode(datPin, datDirection);
+
+    digitalWrite(cePin, LOW);
+    digitalWrite(sclkPin, LOW);
+}
+
+
+bool SigmaDS1302::IsHalted() {
+    prepareRead(REG_SECONDS);
+    byte seconds = readIn();
+    end();
+    return (seconds & 0b10000000);
+}
+
+tm SigmaDS1302::GetTime() {
+    tm t;
+
+    prepareRead(REG_BURST);
+    t.tm_sec = bcdToDec(readIn() & 0x7F);
+    t.tm_min = bcdToDec(readIn() & 0x7F);
+    t.tm_hour = hourFromRegisterValue(readIn());
+    t.tm_mday = bcdToDec(readIn());
+    t.tm_mon = bcdToDec(readIn()) - 1;
+    t.tm_wday = bcdToDec(readIn());
+    t.tm_year = bcdToDec(readIn());
+    t.tm_isdst = -1;  // DST information not available.
+    t.tm_yday = -1;   // Day of year not available.
+    end();
+    return t;
+}
+
+void SigmaDS1302::SetTime(tm& t) {
+    //if (!isValid()) return;
+
+    prepareWrite(REG_WP);
+    writeOut(0b00000000);
+    end();
+    prepareWrite(REG_BURST);
+
+    writeOut(decToBcd(t.tm_sec));
+    writeOut(decToBcd(t.tm_min));
+    writeOut(decToBcd(t.tm_hour));
+    writeOut(decToBcd(t.tm_mday));
+    writeOut(decToBcd(t.tm_mon + 1));
+    writeOut(decToBcd(t.tm_wday));
+    writeOut(decToBcd(t.tm_year));
+    writeOut(0b10000000);
+
+    // All clock registers *and* the WP register have to be written for the time
+    // to be set.
+    end();  // Write protection register.
+}
+
+/*
+void SigmaDS1302::halt() {
+    prepareWrite(REG_SECONDS);
+    writeOut(0b10000000);
+    end();
+}
+*/
+
+void SigmaDS1302::prepareRead(byte address) {
+    setDirection(OUTPUT);
+    digitalWrite(cePin, HIGH);
+    byte command = 0b10000001 | address;
+    writeOut(command);
+    setDirection(INPUT);
+}
+
+
+void SigmaDS1302::prepareWrite(byte address) {
+    setDirection(OUTPUT);
+    digitalWrite(cePin, HIGH);
+    byte command = 0b10000000 | address;
+    writeOut(command);
+}
+
+
+void SigmaDS1302::end() {
+    digitalWrite(cePin, LOW);
+}
+
+
+byte SigmaDS1302::readIn() {
+    byte bt = 0;
+
+    for (byte b = 0; b < 8; b++) {
+        if (digitalRead(datPin) == HIGH) bt |= 0x01 << b;
+        nextBit();
+    }
+
+    return bt;
+}
+
+
+void SigmaDS1302::writeOut(byte value) {
+    for (byte b = 0; b < 8; b++) {
+        digitalWrite(datPin, (value & 0x01) ? HIGH : LOW);
+        nextBit();
+        value >>= 1;
+    }
+}
+
+void SigmaDS1302::nextBit() {
+    digitalWrite(sclkPin, HIGH);
+    delayMicroseconds(1);
+
+    digitalWrite(sclkPin, LOW);
+    delayMicroseconds(1);
+}
+
+
+void SigmaDS1302::setDirection(int direction) {
+    if (datDirection != direction) {
+        datDirection = direction;
+        pinMode(datPin, direction);
+    }
+}
+
+
+
+
+
+#else
 enum Register {
     kSecondReg = 0,
     kMinuteReg = 1,
@@ -41,52 +214,26 @@ private:
     const int sclk_pin;
 };
 
-// Returns the decoded decimal value from a binary-coded decimal (BCD) byte.
-// Assumes 'bcd' is coded with 4-bits per digit, with the tens place digit in
-// the upper 4 MSBs.
-byte SigmaDS1302::bcdToDec(const byte bcd) {
-    return (10 * ((bcd & 0xF0) >> 4) + (bcd & 0x0F));
-}
 
-// Returns the binary-coded decimal of 'dec'. Inverse of bcdToDec.
-byte SigmaDS1302::decToBcd(const byte dec) {
-    const byte tens = dec / 10;
-    const byte ones = dec % 10;
-    return (tens << 4) | ones;
-}
 
-// Returns the hour in 24-hour format from the hour register value.
-byte SigmaDS1302::hourFromRegisterValue(const byte value) {
-    byte adj;
-    if (value & 128)  // 12-hour mode
-        adj = 12 * ((value & 32) >> 5);
-    else           // 24-hour mode
-        adj = 10 * ((value & (32 + 16)) >> 4);
-    return (value & 15) + adj;
-}
-SigmaDS1302::~SigmaDS1302() {}
-
-bool SigmaDS1302::isValid() {
-    return (cePin!=0 && ioPin!=0 && sclkPin!=0);
-}
 
 
 SigmaDS1302::SigmaDS1302(DS1302_Pins& pins): SigmaRTC(RTC_DS1302),
-cePin(pins.cePin), ioPin(pins.datPin), sclkPin(pins.clkPin) {
+cePin(pins.cePin), datPin(pins.datPin), sclkPin(pins.clkPin) {
     if (!isValid()) {
         digitalWrite(cePin, LOW);
         pinMode(cePin, OUTPUT);
-        pinMode(ioPin, INPUT);
+        pinMode(datPin, INPUT);
         digitalWrite(sclkPin, LOW);
         pinMode(sclkPin, OUTPUT);
     }
 }
 
 void SigmaDS1302::writeOut(const byte value, bool readAfter) {
-    pinMode(ioPin, OUTPUT);
+    pinMode(datPin, OUTPUT);
 
     for (int i = 0; i < 8; ++i) {
-        digitalWrite(ioPin, (value >> i) & 1);
+        digitalWrite(datPin, (value >> i) & 1);
         delayMicroseconds(1);
         digitalWrite(sclkPin, HIGH);
         delayMicroseconds(1);
@@ -94,7 +241,7 @@ void SigmaDS1302::writeOut(const byte value, bool readAfter) {
         if (readAfter && i == 7) {
             // We're about to read data -- ensure the pin is back in input mode
             // before the clock is lowered.
-            pinMode(ioPin, INPUT);
+            pinMode(datPin, INPUT);
         } else {
             digitalWrite(sclkPin, LOW);
             delayMicroseconds(1);
@@ -105,7 +252,7 @@ void SigmaDS1302::writeOut(const byte value, bool readAfter) {
 byte SigmaDS1302::readIn() {
     byte input_value = 0;
     byte bit = 0;
-    pinMode(ioPin, INPUT);
+    pinMode(datPin, INPUT);
 
     // Bits from the DS1302 are output on the falling edge of the clock
     // cycle. This is called after readIn (which will leave the clock low) or
@@ -116,7 +263,7 @@ byte SigmaDS1302::readIn() {
         digitalWrite(sclkPin, LOW);
         delayMicroseconds(1);
 
-        bit = digitalRead(ioPin);
+        bit = digitalRead(datPin);
         input_value |= (bit << i);  // Bits are read LSB first.
     }
     Serial.print("readIn=");Serial.println(input_value);
@@ -124,7 +271,7 @@ byte SigmaDS1302::readIn() {
 }
 
 byte SigmaDS1302::readRegister(byte reg) {
-    const SPISession s(cePin, ioPin, sclkPin);
+    const SPISession s(cePin, datPin, sclkPin);
 
     const byte cmd_byte = (0x81 | (reg << 1));
     writeOut(cmd_byte, true);
@@ -132,7 +279,7 @@ byte SigmaDS1302::readRegister(byte reg) {
 }
 
 void SigmaDS1302::writeRegister(byte reg, byte value) {
-    const SPISession s(cePin, ioPin, sclkPin);
+    const SPISession s(cePin, datPin, sclkPin);
 
     const byte cmd_byte = (0x80 | (reg << 1));
     writeOut(cmd_byte);
@@ -166,7 +313,7 @@ tm SigmaDS1302::GetTime() {
         return t;
     }
     Serial.println("Point1");
-    const SPISession s(cePin, ioPin, sclkPin);
+    const SPISession s(cePin, datPin, sclkPin);
     writeOut(kClockBurstRead, true);
     t.tm_sec = bcdToDec(readIn() & 0x7F);
     t.tm_min = bcdToDec(readIn());
@@ -185,7 +332,7 @@ void SigmaDS1302::SetTime(tm& t) {
     // We want to maintain the Clock Halt flag if it is set.
     const byte ch_value = readRegister(kSecondReg) & 0x80;
 
-    const SPISession s(cePin, ioPin, sclkPin);
+    const SPISession s(cePin, datPin, sclkPin);
 
     writeOut(kClockBurstWrite);
     writeOut(ch_value | decToBcd(t.tm_sec));
@@ -199,3 +346,4 @@ void SigmaDS1302::SetTime(tm& t) {
     // to be set.
     writeOut(0);  // Write protection register.
 }
+#endif
