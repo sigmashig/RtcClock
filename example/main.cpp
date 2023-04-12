@@ -4,11 +4,11 @@
 #include <Arduino.h>
 #endif
 #include <time.h>
-
+#ifdef ESP8266
 #define WIFI 1
-//#undef WIFI
-//#define ETHERNET 1
-#undef ETHERNET
+#else
+#define ETHERNET 1
+#endif
 
 #ifdef ETHERNET
 #include <Ethernet.h>

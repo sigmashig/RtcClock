@@ -60,7 +60,7 @@ _WEEK_DAYS_ SigmaClock::DayYesterday(_WEEK_DAYS_ day) {
 time_t SigmaClock::getNtpTime() {
     
 #ifdef ETHERNET
-    Ethernet Udp;
+    EthernetUDP Udp;
 #else
     WiFiUDP Udp;
 #endif

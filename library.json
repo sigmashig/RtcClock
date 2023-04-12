@@ -1,6 +1,6 @@
 {
     "name": "SigmaClock",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "description": "The library, supports a RTC modules DS1302 and DS3231 simultatneously. Using a standard time.h structure.",
     "keywords": "DS1302, DS3231",
     "repository": {

@@ -6,9 +6,11 @@
 #endif
 
 #ifdef ESP8266
+#define WIFI 2
 #include <WiFiClient.h>
 #include <WiFiUdp.h>
 #else
+#define ETHERNET 2
 #include <EthernetUdp.h>
 #endif
 #include <time.h>

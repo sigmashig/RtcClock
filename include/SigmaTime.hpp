@@ -33,4 +33,6 @@ typedef enum {
 #define LEAP_YEAR(Y)      ( (Y)>0) && !((Y)%4) && ( ((Y)%100) || !((Y)%400) )
 
 int month_length(int year, int month /* 1-12 */);
+#else
+#define LEAP_YEAR(Y)       is_leap_year(Y)
 #endif
