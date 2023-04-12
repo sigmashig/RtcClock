@@ -24,13 +24,15 @@
 #include "SigmaClock.hpp"
 
 // DS1302 connection pins datPin, clkPin, cePin;
+//#define DS3231 1
+#define DS1302 1
+
 #ifdef ESP8266
-DS1302_Pins pin1302 = { 14,15,16 };
+DS1302_Pins pin1302 = { D5,D6,D7 };
 #else
 DS1302_Pins pin1302 = { 14,15,16 };
 #endif
 
-#define DS3231 1
 
 void setup() { 
   Serial.begin(115200);
@@ -44,7 +46,7 @@ void setup() {
   
   tm t0, t1;
   char buf[100];
-
+  
 #ifdef ESP8266
   time_t tSystem = time(nullptr);
   localtime_r(&tSystem, &t0);
@@ -62,23 +64,24 @@ void setup() {
   Serial.print("DS3231:"); Serial.println(SigmaClock::PrintClock(t0));
   // set time in format seconds from 2000 year 2023-03-16 21:42:17 (and timezone)
 
-  SigmaClock::SetClock(1678995732LU, 2 * ONE_HOUR, RTC_DS1302, pin1302);
+  SigmaClock::SetClock(1678995732LU, 2 * ONE_HOUR);
   t0 = SigmaClock::GetClock();
   Serial.print("DS3231:"); Serial.println(SigmaClock::PrintClock(t0));
 #endif
 #if DS1302  
   // Get time from DS1302
   t0 = SigmaClock::GetClock(RTC_DS1302, pin1302);
-  Serial.print("DS1302:"); Serial.println(SigmaClock::PrintClock(t0));
-
+  Serial.print("DS1302:"); //Serial.println(SigmaClock::PrintClock(t0));
+  Serial.println(SigmaClock::PrintRaw(t0, buf));
+  Serial.println(SigmaClock::PrintClock(t0));
   // set time in format seconds from 2000 year 2023-03-16 21:42:17 (and timezone)
 
-  SigmaClock::SetClock(1678995732LU, 2 * ONE_HOUR, RTC_DS3231, pin1302);
-  t0 = SigmaClock::GetClock(RTC_DS1302, pin1302);
-  Serial.print("DS1302:"); Serial.println(SigmaClock::PrintClock(t0));
+ // SigmaClock::SetClock(1678995732LU, 2 * ONE_HOUR, RTC_DS1302, pin1302);
+ // t0 = SigmaClock::GetClock(RTC_DS1302, pin1302);
+ // Serial.print("DS1302:"); Serial.println(SigmaClock::PrintClock(t0));
 #endif 
   
-   
+ /*  
   t0.tm_year = 05;
   t0.tm_mon = DECEMBER;
   t0.tm_mday = 31;
@@ -180,6 +183,8 @@ void setup() {
   Serial.println(SigmaClock::PrintClock(t1));
   Serial.print("Raw time: ");
   Serial.println(SigmaClock::PrintRaw(t1, buf));
+*/
+  Serial.println("Done");
 }
 
 void loop() {

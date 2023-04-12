@@ -39,7 +39,11 @@ char* SigmaClock::PrintRaw(tm& t, char* buf) {
 
 char* SigmaClock::PrintClock(tm& t) {
     static char strClock[50];
-    strftime(strClock, sizeof(strClock), "%Y-%m-%d %H:%M:%S %A (%w) [%b %B]", &t);
+    if (!IsTimestampValid(t)) {
+        sprintf(strClock,"Invalid timestamp");
+    } else {
+        strftime(strClock, sizeof(strClock), "%Y-%m-%d %H:%M:%S %A (%w) [%b %B]", &t);
+    }
     return strClock;
 }
 

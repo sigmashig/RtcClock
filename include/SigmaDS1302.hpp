@@ -28,5 +28,5 @@ private:
     byte bcdToDec(const byte bcd);
     byte decToBcd(const byte dec);
     byte hourFromRegisterValue(const byte value);
-
+    bool isValid();
 };
